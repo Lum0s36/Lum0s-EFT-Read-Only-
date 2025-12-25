@@ -1,4 +1,6 @@
 # Lone EFT DMA Radar
+
+THIS FORK IS WIP, NOT FULLY FUNCTIONING AND PRETTY MESSY
 <img width="512" height="512" alt="image" src="https://github.com/user-attachments/assets/dc52d50b-66dd-4a9d-bbf2-c7d9b8c24aba" />
 
 ## ⚠️ IMPORTANT Read First
