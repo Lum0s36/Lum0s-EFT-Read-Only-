@@ -142,14 +142,31 @@ namespace LoneEftDmaRadar
         /// </summary>
         private static async Task ConfigureProgramAsync(LoadingWindow loadingWindow)
         {
-            loadingWindow.UpdateProgress(10, "Loading, Please Wait...");
+            loadingWindow.UpdateProgress(5, "Initializing...", "Preparing application environment");
+            await Task.Delay(100);
+
+            loadingWindow.UpdateProgress(10, "Loading Configuration", "Reading settings and preferences");
+            await Task.Delay(50);
 
             _ = Task.Run(CheckForUpdatesAsync); // Run continuations on the thread pool
 
+            loadingWindow.UpdateProgress(15, "Initializing Modules", "Starting core components");
+            await Task.Delay(50);
+
+            // Start TarkovDataManager first (this loads items, quests, maps from tarkov.dev)
+            loadingWindow.UpdateProgress(20, "Loading Game Data", "Fetching items, quests, and maps from tarkov.dev");
             var tarkovDataManager = TarkovDataManager.ModuleInitAsync();
+            
+            // Start map manager
+            loadingWindow.UpdateProgress(35, "Loading Maps", "Initializing map images and calibration data");
             var eftMapManager = EftMapManager.ModuleInitAsync();
+            
+            // Start memory interface
+            loadingWindow.UpdateProgress(50, "Initializing Memory Interface", "Setting up DMA communication");
             var memoryInterface = Memory.ModuleInitAsync();
 
+            // Initialize misc components
+            loadingWindow.UpdateProgress(65, "Setting Up UI Components", "Configuring themes and renderers");
             var misc = Task.Run(() =>
             {
                 SKPaints.PaintBitmap.ColorFilter = SKPaints.GetDarkModeColorFilter(0.7f);
@@ -157,10 +174,18 @@ namespace LoneEftDmaRadar
                 RuntimeHelpers.RunClassConstructor(typeof(LocalCache).TypeHandle);
             });
 
-            // Wait for all tasks
+            // Wait for all tasks to complete
+            loadingWindow.UpdateProgress(75, "Finalizing Modules", "Waiting for all components to initialize");
             await Task.WhenAll(tarkovDataManager, eftMapManager, memoryInterface, misc);
 
-            loadingWindow.UpdateProgress(100, "Loading Completed!");
+            loadingWindow.UpdateProgress(90, "Almost Ready", "Completing initialization and preparing services");
+            await Task.Delay(100);
+
+            loadingWindow.UpdateProgress(95, "Preparing Main Window", "Starting user interface");
+            await Task.Delay(100);
+
+            loadingWindow.UpdateProgress(100, "Loading Completed!", "Application ready - Welcome to EFT DMA Radar");
+            await Task.Delay(200); // Brief pause to show completion
 
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
         }

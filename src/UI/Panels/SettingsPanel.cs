@@ -89,6 +89,7 @@ namespace LoneEftDmaRadar.UI.Panels
                 DrawPlayersTab();
                 DrawLootTab();
                 DrawContainersTab();
+                DrawAimviewTab();
                 DrawQuestHelperTab();
                 DrawAboutTab();
 
@@ -207,6 +208,14 @@ namespace LoneEftDmaRadar.UI.Panels
                 }
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("Displays a list of nearby players with details");
+
+                bool questHelperWidget = Program.Config.QuestHelper.ShowWidget;
+                if (ImGui.Checkbox("Quest Helper Widget", ref questHelperWidget))
+                {
+                    Program.Config.QuestHelper.ShowWidget = questHelperWidget;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Shows active quests and objectives in a floating widget");
 
                 ImGui.SeparatorText("Visibility");
 
@@ -345,7 +354,7 @@ namespace LoneEftDmaRadar.UI.Panels
                 if (ImGui.Checkbox("Select All", ref selectAll))
                 {
                     Program.Config.Containers.SelectAll = selectAll;
-                    if (_containerEntries is not null)
+                    if (_containerEntries != null)
                     {
                         foreach (var entry in _containerEntries)
                         {
@@ -358,7 +367,7 @@ namespace LoneEftDmaRadar.UI.Panels
 
                 ImGui.SeparatorText("Container Types");
 
-                if (_containerEntries is not null)
+                if (_containerEntries != null)
                 {
                     ImGui.BeginChild("ContainerList", new Vector2(0, 200), ImGuiChildFlags.Borders);
                     foreach (var entry in _containerEntries)
@@ -387,6 +396,8 @@ namespace LoneEftDmaRadar.UI.Panels
         {
             if (ImGui.BeginTabItem("Quest Helper"))
             {
+                ImGui.SeparatorText("Quest Helper Settings");
+
                 bool questHelperEnabled = Program.Config.QuestHelper.Enabled;
                 if (ImGui.Checkbox("Enable Quest Helper", ref questHelperEnabled))
                 {
@@ -394,6 +405,62 @@ namespace LoneEftDmaRadar.UI.Panels
                 }
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("Show quest objectives and items on the radar");
+
+                if (!questHelperEnabled)
+                    ImGui.BeginDisabled();
+
+                bool showLocations = Program.Config.QuestHelper.ShowLocations;
+                if (ImGui.Checkbox("Show Quest Locations on Radar", ref showLocations))
+                {
+                    Program.Config.QuestHelper.ShowLocations = showLocations;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Display quest zone markers on the radar map");
+
+                bool showWidget = Program.Config.QuestHelper.ShowWidget;
+                if (ImGui.Checkbox("Show Quest Widget", ref showWidget))
+                {
+                    Program.Config.QuestHelper.ShowWidget = showWidget;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Display a floating widget with quest objectives");
+
+                ImGui.Separator();
+
+                bool activeOnly = Program.Config.QuestHelper.ActiveOnly;
+                if (ImGui.Checkbox("Active Quests Only", ref activeOnly))
+                {
+                    Program.Config.QuestHelper.ActiveOnly = activeOnly;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Only show quests that are currently active (not completed or locked)");
+
+                bool kappaOnly = Program.Config.QuestHelper.KappaOnly;
+                if (ImGui.Checkbox("Kappa Required Only", ref kappaOnly))
+                {
+                    Program.Config.QuestHelper.KappaOnly = kappaOnly;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Only show quests required for Kappa container");
+
+                bool lightkeeperOnly = Program.Config.QuestHelper.LightkeeperOnly;
+                if (ImGui.Checkbox("Lightkeeper Only", ref lightkeeperOnly))
+                {
+                    Program.Config.QuestHelper.LightkeeperOnly = lightkeeperOnly;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Only show Lightkeeper-related quests");
+
+                float zoneDistance = Program.Config.QuestHelper.ZoneDrawDistance;
+                if (ImGui.SliderFloat("Zone Draw Distance", ref zoneDistance, 10, 500, "%.0fm"))
+                {
+                    Program.Config.QuestHelper.ZoneDrawDistance = zoneDistance;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Maximum distance to draw quest zones on radar");
+
+                if (!questHelperEnabled)
+                    ImGui.EndDisabled();
 
                 ImGui.SeparatorText("Active Quests");
 
@@ -403,6 +470,25 @@ namespace LoneEftDmaRadar.UI.Panels
                     foreach (var quest in quests.Values.OrderBy(x => x.Name))
                     {
                         ImGui.PushID(quest.Id);
+                        
+                        // Track/untrack button
+                        bool isTracked = Program.Config.QuestHelper.TrackedQuests.Contains(quest.Id);
+                        if (isTracked)
+                        {
+                            if (ImGui.SmallButton("?"))
+                                Program.Config.QuestHelper.TrackedQuests.Remove(quest.Id);
+                            if (ImGui.IsItemHovered())
+                                ImGui.SetTooltip("Click to untrack this quest");
+                        }
+                        else
+                        {
+                            if (ImGui.SmallButton("?"))
+                                Program.Config.QuestHelper.TrackedQuests.Add(quest.Id);
+                            if (ImGui.IsItemHovered())
+                                ImGui.SetTooltip("Click to track this quest in widget");
+                        }
+                        ImGui.SameLine();
+
                         bool isBlacklisted = Program.Config.QuestHelper.BlacklistedQuests.ContainsKey(quest.Id);
                         bool showQuest = !isBlacklisted;
                         if (ImGui.Checkbox(quest.Name ?? quest.Id, ref showQuest))
@@ -425,24 +511,284 @@ namespace LoneEftDmaRadar.UI.Panels
             }
         }
 
+        private static void DrawAimviewTab()
+        {
+            if (ImGui.BeginTabItem("Aimview ESP"))
+            {
+                ImGui.SeparatorText("Aimview Widget");
+
+                bool aimviewEnabled = Program.Config.AimviewWidget.Enabled;
+                if (ImGui.Checkbox("Enable Aimview Widget", ref aimviewEnabled))
+                {
+                    Program.Config.AimviewWidget.Enabled = aimviewEnabled;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Enable the 3D aimview ESP widget");
+
+                if (!aimviewEnabled)
+                    ImGui.BeginDisabled();
+
+                ImGui.SeparatorText("Player Display");
+
+                bool showEnemyPlayers = Program.Config.AimviewWidget.ShowEnemyPlayers;
+                if (ImGui.Checkbox("Show Enemy Players", ref showEnemyPlayers))
+                {
+                    Program.Config.AimviewWidget.ShowEnemyPlayers = showEnemyPlayers;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show PMCs and Player Scavs in Aimview");
+
+                bool showTeammates = Program.Config.AimviewWidget.ShowTeammates;
+                if (ImGui.Checkbox("Show Teammates", ref showTeammates))
+                {
+                    Program.Config.AimviewWidget.ShowTeammates = showTeammates;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show teammates in Aimview");
+
+                bool showAI = Program.Config.AimviewWidget.ShowAI;
+                if (ImGui.Checkbox("Show AI", ref showAI))
+                {
+                    Program.Config.AimviewWidget.ShowAI = showAI;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show Scavs, Raiders, and Bosses in Aimview");
+
+                ImGui.Separator();
+
+                bool showPlayerNames = Program.Config.AimviewWidget.ShowPlayerNames;
+                if (ImGui.Checkbox("Show Player Names", ref showPlayerNames))
+                {
+                    Program.Config.AimviewWidget.ShowPlayerNames = showPlayerNames;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show player names in Aimview");
+
+                bool showPlayerDistance = Program.Config.AimviewWidget.ShowPlayerDistance;
+                if (ImGui.Checkbox("Show Player Distance", ref showPlayerDistance))
+                {
+                    Program.Config.AimviewWidget.ShowPlayerDistance = showPlayerDistance;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show distance to players in Aimview");
+
+                bool showPlayerHealth = Program.Config.AimviewWidget.ShowPlayerHealth;
+                if (ImGui.Checkbox("Show Player Health", ref showPlayerHealth))
+                {
+                    Program.Config.AimviewWidget.ShowPlayerHealth = showPlayerHealth;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show player health percentage in Aimview");
+
+                ImGui.Separator();
+
+                bool showAINames = Program.Config.AimviewWidget.ShowAINames;
+                if (ImGui.Checkbox("Show AI Names", ref showAINames))
+                {
+                    Program.Config.AimviewWidget.ShowAINames = showAINames;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show AI names in Aimview");
+
+                bool showAIDistance = Program.Config.AimviewWidget.ShowAIDistance;
+                if (ImGui.Checkbox("Show AI Distance", ref showAIDistance))
+                {
+                    Program.Config.AimviewWidget.ShowAIDistance = showAIDistance;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show distance to AI in Aimview");
+
+                bool showAIHealth = Program.Config.AimviewWidget.ShowAIHealth;
+                if (ImGui.Checkbox("Show AI Health", ref showAIHealth))
+                {
+                    Program.Config.AimviewWidget.ShowAIHealth = showAIHealth;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show AI health percentage in Aimview");
+
+                ImGui.SeparatorText("Skeleton & Head Circle");
+
+                bool showSkeleton = Program.Config.AimviewWidget.ShowSkeleton;
+                if (ImGui.Checkbox("Show Skeleton (Players)", ref showSkeleton))
+                {
+                    Program.Config.AimviewWidget.ShowSkeleton = showSkeleton;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Draw skeleton/bones for players in Aimview");
+
+                bool showSkeletonAI = Program.Config.AimviewWidget.ShowSkeletonAI;
+                if (ImGui.Checkbox("Show Skeleton (AI)", ref showSkeletonAI))
+                {
+                    Program.Config.AimviewWidget.ShowSkeletonAI = showSkeletonAI;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Draw skeleton/bones for AI in Aimview");
+
+                bool showHeadCircle = Program.Config.AimviewWidget.ShowHeadCircle;
+                if (ImGui.Checkbox("Show Head Circles (Players)", ref showHeadCircle))
+                {
+                    Program.Config.AimviewWidget.ShowHeadCircle = showHeadCircle;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Draw head circles for players in Aimview");
+
+                bool showHeadCircleAI = Program.Config.AimviewWidget.ShowHeadCircleAI;
+                if (ImGui.Checkbox("Show Head Circles (AI)", ref showHeadCircleAI))
+                {
+                    Program.Config.AimviewWidget.ShowHeadCircleAI = showHeadCircleAI;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Draw head circles for AI in Aimview");
+
+                ImGui.SeparatorText("Distance Limits");
+
+                float playerMaxDistance = Program.Config.AimviewWidget.PlayerMaxDistance;
+                if (ImGui.SliderFloat("Player Max Distance", ref playerMaxDistance, 0, 500, "%.0fm (0=Unlimited)"))
+                {
+                    Program.Config.AimviewWidget.PlayerMaxDistance = playerMaxDistance;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Maximum distance to render players in Aimview (0 = unlimited)");
+
+                float aiMaxDistance = Program.Config.AimviewWidget.AIMaxDistance;
+                if (ImGui.SliderFloat("AI Max Distance", ref aiMaxDistance, 0, 500, "%.0fm (0=Unlimited)"))
+                {
+                    Program.Config.AimviewWidget.AIMaxDistance = aiMaxDistance;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Maximum distance to render AI in Aimview (0 = unlimited)");
+
+                ImGui.SeparatorText("Loot Display");
+
+                bool showLoot = Program.Config.AimviewWidget.ShowLoot;
+                if (ImGui.Checkbox("Show Loot", ref showLoot))
+                {
+                    Program.Config.AimviewWidget.ShowLoot = showLoot;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show loot items in Aimview");
+
+                bool lootDistanceMax = Program.Config.AimviewWidget.LootRenderDistanceMax;
+                if (ImGui.Checkbox("Unlimited Loot Distance", ref lootDistanceMax))
+                {
+                    Program.Config.AimviewWidget.LootRenderDistanceMax = lootDistanceMax;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("If enabled, loot will be rendered at any distance");
+
+                if (!lootDistanceMax)
+                {
+                    float lootDistance = Program.Config.AimviewWidget.LootRenderDistance;
+                    if (ImGui.SliderFloat("Loot Render Distance", ref lootDistance, 0, 150, "%.0fm"))
+                    {
+                        Program.Config.AimviewWidget.LootRenderDistance = lootDistance;
+                    }
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("Maximum distance to render loot in Aimview");
+                }
+
+                bool showQuestItems = Program.Config.AimviewWidget.ShowQuestItems;
+                if (ImGui.Checkbox("Show Quest Items", ref showQuestItems))
+                {
+                    Program.Config.AimviewWidget.ShowQuestItems = showQuestItems;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Highlight quest items with special marker in Aimview");
+
+                bool showWishlisted = Program.Config.AimviewWidget.ShowWishlisted;
+                if (ImGui.Checkbox("Show Wishlisted Items", ref showWishlisted))
+                {
+                    Program.Config.AimviewWidget.ShowWishlisted = showWishlisted;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Highlight wishlist items with special marker in Aimview");
+
+                bool showCorpses = Program.Config.AimviewWidget.ShowCorpses;
+                if (ImGui.Checkbox("Show Corpses", ref showCorpses))
+                {
+                    Program.Config.AimviewWidget.ShowCorpses = showCorpses;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show corpse markers in Aimview");
+
+                ImGui.SeparatorText("Container Display");
+
+                bool showContainers = Program.Config.AimviewWidget.ShowContainers;
+                if (ImGui.Checkbox("Show Containers", ref showContainers))
+                {
+                    Program.Config.AimviewWidget.ShowContainers = showContainers;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show static containers in Aimview");
+
+                float containerDistance = Program.Config.AimviewWidget.ContainerDistance;
+                if (ImGui.SliderFloat("Container Render Distance", ref containerDistance, 0, 200, "%.0fm (0=Unlimited)"))
+                {
+                    Program.Config.AimviewWidget.ContainerDistance = containerDistance;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Maximum distance to render containers in Aimview (0 = unlimited)");
+
+                ImGui.SeparatorText("World Display");
+
+                bool showExfils = Program.Config.AimviewWidget.ShowExfils;
+                if (ImGui.Checkbox("Show Exfils", ref showExfils))
+                {
+                    Program.Config.AimviewWidget.ShowExfils = showExfils;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show extraction points in Aimview (always unlimited distance)");
+
+                bool showQuestLocations = Program.Config.AimviewWidget.ShowQuestLocations;
+                if (ImGui.Checkbox("Show Quest Locations", ref showQuestLocations))
+                {
+                    Program.Config.AimviewWidget.ShowQuestLocations = showQuestLocations;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show quest zones/locations in Aimview");
+
+                bool showTripwires = Program.Config.AimviewWidget.ShowTripwires;
+                if (ImGui.Checkbox("Show Tripwires", ref showTripwires))
+                {
+                    Program.Config.AimviewWidget.ShowTripwires = showTripwires;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show tripwire explosives in Aimview");
+
+                bool showGrenades = Program.Config.AimviewWidget.ShowGrenades;
+                if (ImGui.Checkbox("Show Grenades", ref showGrenades))
+                {
+                    Program.Config.AimviewWidget.ShowGrenades = showGrenades;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Show active grenades in Aimview");
+
+                if (!aimviewEnabled)
+                    ImGui.EndDisabled();
+
+                ImGui.EndTabItem();
+            }
+        }
+
         private static void DrawAboutTab()
         {
             if (ImGui.BeginTabItem("About"))
             {
-                ImGui.Text(Program.Name);
-                ImGui.Separator();
-                ImGui.TextWrapped("A DMA-based radar for Escape From Tarkov.");
-
+                ImGui.SeparatorText("Lone EFT DMA Radar");
+                
+                ImGui.Text("A DMA-based radar for Escape from Tarkov");
                 ImGui.Spacing();
-                if (ImGui.Button("Visit Website"))
-                {
-                    try
-                    {
-                        Process.Start(new ProcessStartInfo("https://lone-dma.org/") { UseShellExecute = true });
-                    }
-                    catch { }
-                }
-
+                ImGui.Text("Version: Read-Only Edition");
+                ImGui.Spacing();
+                
+                ImGui.SeparatorText("Credits");
+                ImGui.BulletText("Lone DMA - Original Developer");
+                ImGui.BulletText("Community Contributors");
+                
+                ImGui.Spacing();
+                ImGui.SeparatorText("Disclaimer");
+                ImGui.TextWrapped("This software is provided for educational purposes only. Use at your own risk.");
+                
                 ImGui.EndTabItem();
             }
         }

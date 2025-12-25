@@ -577,6 +577,104 @@ namespace LoneEftDmaRadar.UI.Skia
             IsAntialias = true
         };
 
+        public static SKPaint PaintAimviewWidgetExfil { get; } = new()
+        {
+            Color = SKColors.LimeGreen,
+            StrokeWidth = 1.5f,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true
+        };
+
+        public static SKPaint TextAimviewWidgetExfil { get; } = new()
+        {
+            Color = SKColors.LimeGreen,
+            IsStroke = false,
+            IsAntialias = true
+        };
+
+        public static SKPaint PaintAimviewWidgetExfilTransit { get; } = new()
+        {
+            Color = SKColors.Orange,
+            StrokeWidth = 1.5f,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true
+        };
+
+        public static SKPaint PaintAimviewWidgetContainer { get; } = new()
+        {
+            Color = SKColor.Parse("FFFFCC"),
+            StrokeWidth = 0.75f,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true
+        };
+
+        public static SKPaint TextAimviewWidgetContainer { get; } = new()
+        {
+            Color = SKColor.Parse("FFFFCC"),
+            IsStroke = false,
+            IsAntialias = true
+        };
+
+        public static SKPaint PaintAimviewWidgetQuestZone { get; } = new()
+        {
+            Color = SKColors.DeepPink,
+            StrokeWidth = 1f,
+            Style = SKPaintStyle.Stroke,
+            IsAntialias = true
+        };
+
+        public static SKPaint TextAimviewWidgetQuestZone { get; } = new()
+        {
+            Color = SKColors.DeepPink,
+            IsStroke = false,
+            IsAntialias = true
+        };
+
+        public static SKPaint PaintAimviewWidgetCorpse { get; } = new()
+        {
+            Color = SKColors.Silver,
+            StrokeWidth = 0.75f,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true
+        };
+
+        public static SKPaint TextAimviewWidgetCorpse { get; } = new()
+        {
+            Color = SKColors.Silver,
+            IsStroke = false,
+            IsAntialias = true
+        };
+
+        public static SKPaint PaintAimviewWidgetWishlistItem { get; } = new()
+        {
+            Color = SKColors.Lime,
+            StrokeWidth = 0.75f,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true
+        };
+
+        public static SKPaint TextAimviewWidgetWishlistItem { get; } = new()
+        {
+            Color = SKColors.Lime,
+            IsStroke = false,
+            IsAntialias = true
+        };
+
+        public static SKPaint PaintAimviewWidgetQuestItem { get; } = new()
+        {
+            Color = SKColors.YellowGreen,
+            StrokeWidth = 0.75f,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true
+        };
+
+        public static SKPaint TextAimviewWidgetQuestItem { get; } = new()
+        {
+            Color = SKColors.YellowGreen,
+            IsStroke = false,
+            IsAntialias = true
+        };
+
         #endregion
 
     }

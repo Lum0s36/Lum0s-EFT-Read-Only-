@@ -655,6 +655,168 @@ namespace LoneEftDmaRadar
         /// </summary>
         [JsonPropertyName("enabled")]
         public bool Enabled { get; set; } = true;
+
+        /// <summary>
+        /// Show loot items in Aimview.
+        /// </summary>
+        [JsonPropertyName("showLoot")]
+        public bool ShowLoot { get; set; } = true;
+
+        /// <summary>
+        /// Maximum distance to render loot in Aimview (0 = unlimited).
+        /// </summary>
+        [JsonPropertyName("lootRenderDistance")]
+        public float LootRenderDistance { get; set; } = 50f;
+
+        /// <summary>
+        /// If true, loot render distance is unlimited (ignores LootRenderDistance).
+        /// </summary>
+        [JsonPropertyName("lootRenderDistanceMax")]
+        public bool LootRenderDistanceMax { get; set; } = false;
+
+        /// <summary>
+        /// Show quest items with special marker in Aimview.
+        /// </summary>
+        [JsonPropertyName("showQuestItems")]
+        public bool ShowQuestItems { get; set; } = true;
+
+        /// <summary>
+        /// Show quest locations/zones in Aimview.
+        /// </summary>
+        [JsonPropertyName("showQuestLocations")]
+        public bool ShowQuestLocations { get; set; } = true;
+
+        /// <summary>
+        /// Show AI players in Aimview.
+        /// </summary>
+        [JsonPropertyName("showAI")]
+        public bool ShowAI { get; set; } = true;
+
+        /// <summary>
+        /// Show enemy players in Aimview.
+        /// </summary>
+        [JsonPropertyName("showEnemyPlayers")]
+        public bool ShowEnemyPlayers { get; set; } = true;
+
+        /// <summary>
+        /// Show teammates in Aimview.
+        /// </summary>
+        [JsonPropertyName("showTeammates")]
+        public bool ShowTeammates { get; set; } = true;
+
+        /// <summary>
+        /// Draw head circles for players in Aimview.
+        /// </summary>
+        [JsonPropertyName("showHeadCircle")]
+        public bool ShowHeadCircle { get; set; } = false;
+
+        /// <summary>
+        /// Draw head circles for AI in Aimview.
+        /// </summary>
+        [JsonPropertyName("showHeadCircleAI")]
+        public bool ShowHeadCircleAI { get; set; } = false;
+
+        /// <summary>
+        /// Show skeleton/bones for players in Aimview.
+        /// </summary>
+        [JsonPropertyName("showSkeleton")]
+        public bool ShowSkeleton { get; set; } = false;
+
+        /// <summary>
+        /// Show skeleton/bones for AI in Aimview.
+        /// </summary>
+        [JsonPropertyName("showSkeletonAI")]
+        public bool ShowSkeletonAI { get; set; } = false;
+
+        /// <summary>
+        /// Show player names in Aimview.
+        /// </summary>
+        [JsonPropertyName("showPlayerNames")]
+        public bool ShowPlayerNames { get; set; } = true;
+
+        /// <summary>
+        /// Show player distance in Aimview.
+        /// </summary>
+        [JsonPropertyName("showPlayerDistance")]
+        public bool ShowPlayerDistance { get; set; } = true;
+
+        /// <summary>
+        /// Show player health in Aimview.
+        /// </summary>
+        [JsonPropertyName("showPlayerHealth")]
+        public bool ShowPlayerHealth { get; set; } = true;
+
+        /// <summary>
+        /// Show AI names in Aimview.
+        /// </summary>
+        [JsonPropertyName("showAINames")]
+        public bool ShowAINames { get; set; } = true;
+
+        /// <summary>
+        /// Show AI distance in Aimview.
+        /// </summary>
+        [JsonPropertyName("showAIDistance")]
+        public bool ShowAIDistance { get; set; } = true;
+
+        /// <summary>
+        /// Show AI health in Aimview.
+        /// </summary>
+        [JsonPropertyName("showAIHealth")]
+        public bool ShowAIHealth { get; set; } = true;
+
+        /// <summary>
+        /// Show wishlist items with special marker in Aimview.
+        /// </summary>
+        [JsonPropertyName("showWishlisted")]
+        public bool ShowWishlisted { get; set; } = true;
+
+        /// <summary>
+        /// Show static containers in Aimview.
+        /// </summary>
+        [JsonPropertyName("showContainers")]
+        public bool ShowContainers { get; set; } = false;
+
+        /// <summary>
+        /// Maximum distance to render containers in Aimview (0 = unlimited).
+        /// </summary>
+        [JsonPropertyName("containerDistance")]
+        public float ContainerDistance { get; set; } = 100f;
+
+        /// <summary>
+        /// Show exfil points in Aimview.
+        /// </summary>
+        [JsonPropertyName("showExfils")]
+        public bool ShowExfils { get; set; } = true;
+
+        /// <summary>
+        /// Show corpse markers in Aimview.
+        /// </summary>
+        [JsonPropertyName("showCorpses")]
+        public bool ShowCorpses { get; set; } = true;
+
+        /// <summary>
+        /// Show tripwires/explosives in Aimview.
+        /// </summary>
+        [JsonPropertyName("showTripwires")]
+        public bool ShowTripwires { get; set; } = true;
+
+        /// <summary>
+        /// Show grenades in Aimview.
+        /// </summary>
+        [JsonPropertyName("showGrenades")]
+        public bool ShowGrenades { get; set; } = true;
+
+        /// <summary>
+        /// Maximum distance to render players in Aimview (0 = unlimited).
+        /// </summary>
+        [JsonPropertyName("playerMaxDistance")]
+        public float PlayerMaxDistance { get; set; } = 0f;
+
+        /// <summary>
+        /// Maximum distance to render AI in Aimview (0 = unlimited).
+        /// </summary>
+        [JsonPropertyName("aiMaxDistance")]
+        public float AIMaxDistance { get; set; } = 0f;
     }
 
     public sealed class InfoWidgetConfig
@@ -756,6 +918,49 @@ namespace LoneEftDmaRadar
         /// </summary>
         [JsonPropertyName("enabled")]
         public bool Enabled { get; set; } = true;
+
+        /// <summary>
+        /// Show quest locations on radar.
+        /// </summary>
+        [JsonPropertyName("showLocations")]
+        public bool ShowLocations { get; set; } = true;
+
+        /// <summary>
+        /// Show only active quests (not completed/locked).
+        /// </summary>
+        [JsonPropertyName("activeOnly")]
+        public bool ActiveOnly { get; set; } = false;
+
+        /// <summary>
+        /// Show only Kappa-required quests.
+        /// </summary>
+        [JsonPropertyName("kappaOnly")]
+        public bool KappaOnly { get; set; } = false;
+
+        /// <summary>
+        /// Show only Lightkeeper-related quests.
+        /// </summary>
+        [JsonPropertyName("lightkeeperOnly")]
+        public bool LightkeeperOnly { get; set; } = false;
+
+        /// <summary>
+        /// Maximum distance to draw quest zones.
+        /// </summary>
+        [JsonPropertyName("zoneDrawDistance")]
+        public float ZoneDrawDistance { get; set; } = 100f;
+
+        /// <summary>
+        /// Show the Quest Helper Widget.
+        /// </summary>
+        [JsonPropertyName("showWidget")]
+        public bool ShowWidget { get; set; } = false;
+
+        /// <summary>
+        /// Tracked quests (pinned in widget).
+        /// </summary>
+        [JsonPropertyName("trackedQuests")]
+        [JsonInclude]
+        public HashSet<string> TrackedQuests { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Quests that are overridden/disabled.

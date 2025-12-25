@@ -251,6 +251,74 @@ namespace LoneEftDmaRadar.Tarkov.GameWorld.Player
                 }
             }
             Equipment = new PlayerEquipment(this);
+            
+            // Setup bone transforms for skeleton rendering
+            SetupBones();
+        }
+
+        /// <summary>
+        /// Initialize bone transforms for skeleton rendering.
+        /// </summary>
+        private void SetupBones()
+        {
+            try
+            {
+                var bonesToRegister = new[]
+                {
+                    Bones.HumanHead,
+                    Bones.HumanNeck,
+                    Bones.HumanSpine3,
+                    Bones.HumanSpine2,
+                    Bones.HumanSpine1,
+                    Bones.HumanPelvis,
+                    Bones.HumanLUpperarm,
+                    Bones.HumanLForearm1,
+                    Bones.HumanLPalm,
+                    Bones.HumanRUpperarm,
+                    Bones.HumanRForearm1,
+                    Bones.HumanRPalm,
+                    Bones.HumanLThigh1,
+                    Bones.HumanLCalf,
+                    Bones.HumanLFoot,
+                    Bones.HumanRThigh1,
+                    Bones.HumanRCalf,
+                    Bones.HumanRFoot
+                };
+
+                // Read the skeleton values array base
+                var skeletonValuesPtr = Memory.ReadPtrChain(this, false,
+                    Offsets.ObservedPlayerView.PlayerBody,
+                    Offsets.PlayerBody.SkeletonRootJoint,
+                    Offsets.DizSkinningSkeleton._values,
+                    UnityList<byte>.ArrOffset);
+
+                foreach (var bone in bonesToRegister)
+                {
+                    try
+                    {
+                        // Each bone is at offset ArrStartOffset + boneIndex * 8, then dereference +0x10 for TransformInternal
+                        var bonePtr = Memory.ReadPtr(skeletonValuesPtr + UnityList<byte>.ArrStartOffset + (uint)bone * 0x8);
+                        var ti = Memory.ReadPtr(bonePtr + 0x10);
+                        var transform = new UnityTransform(ti);
+                        _ = transform.UpdatePosition();
+                        PlayerBones.TryAdd(bone, transform);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logging.WriteLine($"[Skeleton] Failed to init bone {bone} for '{Name}': {ex.Message}");
+                    }
+                }
+
+                if (PlayerBones.Count > 0)
+                {
+                    Skeleton = new PlayerSkeleton(SkeletonRoot, PlayerBones);
+                    Logging.WriteLine($"[Skeleton] Initialized {PlayerBones.Count} bones for '{Name}'");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logging.WriteLine($"[Skeleton] Failed to setup bones for '{Name}': {ex.Message}");
+            }
         }
 
         /// <summary>

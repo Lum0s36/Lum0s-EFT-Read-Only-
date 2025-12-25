@@ -12,6 +12,16 @@ namespace LoneEftDmaRadar.Tarkov.GameWorld.Quests
     public sealed class QuestLocation : IWorldEntity, IMapEntity, IMouseoverEntity
     {
         /// <summary>
+        /// ID of the quest this location belongs to.
+        /// </summary>
+        public string QuestId { get; }
+        
+        /// <summary>
+        /// ID of the condition/objective this location belongs to.
+        /// </summary>
+        public string ConditionId { get; }
+        
+        /// <summary>
         /// Name of this quest.
         /// </summary>
         public string Name { get; }
@@ -21,23 +31,25 @@ namespace LoneEftDmaRadar.Tarkov.GameWorld.Quests
         private readonly Vector3 _position;
         public ref readonly Vector3 Position => ref _position;
 
-        public QuestLocation(string questID, string target, Vector3 position)
+        public QuestLocation(string questID, string conditionId, Vector3 position)
         {
+            QuestId = questID;
+            ConditionId = conditionId;
             QuestObjectiveType foundType = QuestObjectiveType.Unknown;
             // Resolve quest name and objective type (if available).
             if (TarkovDataManager.TaskData.TryGetValue(questID, out var q))
             {
-                Name = q.Name ?? target;
+                Name = q.Name ?? conditionId;
 
-                // Attempt to find the objective that corresponds to 'target' and extract its Type.
+                // Attempt to find the objective that corresponds to 'conditionId' and extract its Type.
                 try
                 {
                     if (q.Objectives is not null)
                     {
                         var obj = q.Objectives.FirstOrDefault(o =>
-                            !string.IsNullOrEmpty(o.Id) && string.Equals(o.Id, target, StringComparison.OrdinalIgnoreCase)
-                            || (o.MarkerItem?.Id is not null && string.Equals(o.MarkerItem.Id, target, StringComparison.OrdinalIgnoreCase))
-                            || (o.Zones?.Any(z => string.Equals(z.Id, target, StringComparison.OrdinalIgnoreCase)) == true)
+                            !string.IsNullOrEmpty(o.Id) && string.Equals(o.Id, conditionId, StringComparison.OrdinalIgnoreCase)
+                            || (o.MarkerItem?.Id is not null && string.Equals(o.MarkerItem.Id, conditionId, StringComparison.OrdinalIgnoreCase))
+                            || (o.Zones?.Any(z => string.Equals(z.Id, conditionId, StringComparison.OrdinalIgnoreCase)) == true)
                         );
                         foundType = obj?.Type ?? QuestObjectiveType.Unknown;
                     }
@@ -52,7 +64,7 @@ namespace LoneEftDmaRadar.Tarkov.GameWorld.Quests
             else
             {
                 // Fallback when TaskData doesn't contain the quest
-                Name = target;
+                Name = conditionId;
                 Type = QuestObjectiveType.Unknown;
             }
 

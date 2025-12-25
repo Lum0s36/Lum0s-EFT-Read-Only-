@@ -688,6 +688,12 @@ namespace LoneEftDmaRadar.UI
             {
                 PlayerInfoWidget.Draw();
             }
+
+            // Quest Helper Widget
+            if (QuestHelperWidget.IsOpen && InRaid)
+            {
+                QuestHelperWidget.Draw();
+            }
         }
 
         private static void DrawLootFiltersWindow()

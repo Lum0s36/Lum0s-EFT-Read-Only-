@@ -30,11 +30,12 @@ using ImGuiNET;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
+using System.Diagnostics;
 
 namespace LoneEftDmaRadar.UI.Misc
 {
     /// <summary>
-    /// A simple loading window using Silk.NET and ImGui.
+    /// A loading window using Silk.NET and ImGui that displays loading progress and status.
     /// </summary>
     internal sealed partial class LoadingWindow : IDisposable
     {
@@ -43,9 +44,14 @@ namespace LoneEftDmaRadar.UI.Misc
         private ImGuiController _imgui;
 
         private float _progress;
-        private string _statusText = "Loading...";
+        private string _statusText = "Initializing...";
+        private string _currentStep = "";
         private bool _isRunning;
         private bool _disposed;
+
+        // Animation state
+        private float _pulsePhase;
+        private readonly Stopwatch _animationTimer = Stopwatch.StartNew();
 
         /// <summary>
         /// Current progress value (0-100).
@@ -57,7 +63,7 @@ namespace LoneEftDmaRadar.UI.Misc
         }
 
         /// <summary>
-        /// Current status text to display.
+        /// Current status text to display (main heading).
         /// </summary>
         public string StatusText
         {
@@ -65,11 +71,20 @@ namespace LoneEftDmaRadar.UI.Misc
             set => _statusText = value ?? string.Empty;
         }
 
+        /// <summary>
+        /// Current step description (sub-text below progress bar).
+        /// </summary>
+        public string CurrentStep
+        {
+            get => _currentStep;
+            set => _currentStep = value ?? string.Empty;
+        }
+
         public LoadingWindow()
         {
             var options = WindowOptions.Default;
-            options.Size = new Vector2D<int>(650, 150);
-            options.Title = "Loading...";
+            options.Size = new Vector2D<int>(550, 220);
+            options.Title = "EFT DMA Radar - Loading...";
             options.WindowBorder = WindowBorder.Hidden;
             options.WindowState = WindowState.Normal;
             options.VSync = false;
@@ -122,10 +137,14 @@ namespace LoneEftDmaRadar.UI.Misc
             if (_imgui is null || _gl is null)
                 return;
 
-            _gl.ClearColor(0.15f, 0.15f, 0.15f, 1.0f);
+            // Dark background
+            _gl.ClearColor(0.10f, 0.10f, 0.12f, 1.0f);
             _gl.Clear(ClearBufferMask.ColorBufferBit);
 
             _imgui.Update(1f / 60f);
+
+            // Update animation
+            _pulsePhase = (float)(_animationTimer.Elapsed.TotalSeconds * 2.0) % (2f * MathF.PI);
 
             DrawLoadingUI();
 
@@ -135,12 +154,13 @@ namespace LoneEftDmaRadar.UI.Misc
         }
 
         /// <summary>
-        /// Update progress and status text.
+        /// Update progress, status text, and current step.
         /// </summary>
-        public void UpdateProgress(float percent, string status)
+        public void UpdateProgress(float percent, string status, string step = "")
         {
             Progress = percent;
             StatusText = status;
+            CurrentStep = step;
         }
 
         /// <summary>
@@ -208,13 +228,19 @@ namespace LoneEftDmaRadar.UI.Misc
         {
             var style = ImGui.GetStyle();
             style.WindowRounding = 0f;
-            style.FrameRounding = 3.0f;
+            style.FrameRounding = 6.0f;
+            style.WindowPadding = new Vector2(20, 20);
+            style.ItemSpacing = new Vector2(8, 8);
 
             var colors = style.Colors;
-            colors[(int)ImGuiCol.WindowBg] = new Vector4(0.15f, 0.15f, 0.15f, 1.0f);
+            // Dark theme colors
+            colors[(int)ImGuiCol.WindowBg] = new Vector4(0.10f, 0.10f, 0.12f, 1.0f);
             colors[(int)ImGuiCol.Text] = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-            colors[(int)ImGuiCol.FrameBg] = new Vector4(0.2f, 0.2f, 0.2f, 1.0f);
-            colors[(int)ImGuiCol.PlotHistogram] = new Vector4(0.2f, 0.7f, 0.2f, 1.0f);
+            colors[(int)ImGuiCol.TextDisabled] = new Vector4(0.5f, 0.5f, 0.5f, 1.0f);
+            colors[(int)ImGuiCol.FrameBg] = new Vector4(0.18f, 0.18f, 0.22f, 1.0f);
+            colors[(int)ImGuiCol.FrameBgHovered] = new Vector4(0.22f, 0.22f, 0.28f, 1.0f);
+            // Progress bar colors - blue accent
+            colors[(int)ImGuiCol.PlotHistogram] = new Vector4(0.30f, 0.65f, 1.0f, 1.0f);
         }
 
         private void DrawLoadingUI()
@@ -230,43 +256,106 @@ namespace LoneEftDmaRadar.UI.Misc
 
             if (ImGui.Begin("LoadingContent", flags))
             {
-                // Center content vertically
-                float contentHeight = 60f;
-                float startY = (windowSize.Y - contentHeight) / 2f;
-                ImGui.SetCursorPosY(startY);
+                float contentWidth = windowSize.X - 60f;
+                float startX = 30f;
 
-                // Status text - centered
-                float textWidth = ImGui.CalcTextSize(_statusText).X;
-                ImGui.SetCursorPosX((windowSize.X - textWidth) / 2f);
+                // Title with subtle animation
+                float titleY = 25f;
+                ImGui.SetCursorPos(new Vector2(0, titleY));
+                
+                string title = "EFT DMA Radar";
+                var titleSize = ImGui.CalcTextSize(title);
+                ImGui.SetCursorPosX((windowSize.X - titleSize.X) / 2f);
+                
+                // Pulsing title color
+                float pulse = 0.85f + 0.15f * MathF.Sin(_pulsePhase);
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(pulse, pulse, 1.0f, 1.0f));
+                ImGui.TextUnformatted(title);
+                ImGui.PopStyleColor();
+
+                // Status text - centered below title
+                ImGui.SetCursorPosY(titleY + 35f);
+                var statusSize = ImGui.CalcTextSize(_statusText);
+                ImGui.SetCursorPosX((windowSize.X - statusSize.X) / 2f);
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.7f, 0.7f, 0.7f, 1.0f));
                 ImGui.TextUnformatted(_statusText);
+                ImGui.PopStyleColor();
 
-                ImGui.Spacing();
-                ImGui.Spacing();
+                // Progress bar container
+                float progressY = titleY + 75f;
+                float progressBarHeight = 24f;
+                ImGui.SetCursorPos(new Vector2(startX, progressY));
 
-                // Progress bar - centered with padding, no overlay text
-                float progressBarWidth = windowSize.X - 80f;
-                float progressBarX = 40f;
-                float progressBarHeight = 30f;
-                ImGui.SetCursorPosX(progressBarX);
+                // Draw progress bar background
+                var drawList = ImGui.GetWindowDrawList();
+                var progressBarPos = ImGui.GetCursorScreenPos();
+                var progressBarEnd = new Vector2(progressBarPos.X + contentWidth, progressBarPos.Y + progressBarHeight);
+                
+                // Background with rounded corners
+                uint bgColor = ImGui.GetColorU32(new Vector4(0.18f, 0.18f, 0.22f, 1.0f));
+                drawList.AddRectFilled(progressBarPos, progressBarEnd, bgColor, 6f);
+                
+                // Progress fill with gradient effect
+                float fillWidth = contentWidth * (_progress / 100f);
+                if (fillWidth > 0)
+                {
+                    var fillEnd = new Vector2(progressBarPos.X + fillWidth, progressBarPos.Y + progressBarHeight);
+                    
+                    // Base progress color (blue)
+                    uint progressColor = ImGui.GetColorU32(new Vector4(0.30f, 0.65f, 1.0f, 1.0f));
+                    // Lighter highlight at top
+                    uint progressHighlight = ImGui.GetColorU32(new Vector4(0.45f, 0.75f, 1.0f, 1.0f));
+                    
+                    drawList.AddRectFilledMultiColor(
+                        progressBarPos, fillEnd,
+                        progressHighlight, progressHighlight,
+                        progressColor, progressColor);
+                    
+                    // Add subtle glow effect at the end of progress
+                    if (fillWidth > 10)
+                    {
+                        float glowPulse = 0.3f + 0.2f * MathF.Sin(_pulsePhase * 2f);
+                        uint glowColor = ImGui.GetColorU32(new Vector4(0.5f, 0.8f, 1.0f, glowPulse));
+                        var glowPos = new Vector2(progressBarPos.X + fillWidth - 5, progressBarPos.Y);
+                        var glowEnd = new Vector2(progressBarPos.X + fillWidth, progressBarPos.Y + progressBarHeight);
+                        drawList.AddRectFilled(glowPos, glowEnd, glowColor, 3f);
+                    }
+                }
+                
+                // Border
+                uint borderColor = ImGui.GetColorU32(new Vector4(0.25f, 0.25f, 0.30f, 1.0f));
+                drawList.AddRect(progressBarPos, progressBarEnd, borderColor, 6f);
 
-                // Draw progress bar without text overlay (empty string)
-                ImGui.ProgressBar(_progress / 100f, new Vector2(progressBarWidth, progressBarHeight), "");
-
-                // Draw centered percentage text on top of progress bar
+                // Percentage text centered on progress bar
                 var percentText = $"{_progress:F0}%";
-                var percentTextSize = ImGui.CalcTextSize(percentText);
-                var progressBarPos = ImGui.GetItemRectMin();
-                var progressBarSize = ImGui.GetItemRectSize();
+                var percentSize = ImGui.CalcTextSize(percentText);
+                float textX = progressBarPos.X + (contentWidth - percentSize.X) / 2f;
+                float textY = progressBarPos.Y + (progressBarHeight - percentSize.Y) / 2f;
+                drawList.AddText(new Vector2(textX, textY), ImGui.GetColorU32(ImGuiCol.Text), percentText);
 
-                // Calculate centered position for text
-                float textX = progressBarPos.X + (progressBarSize.X - percentTextSize.X) / 2f;
-                float textY = progressBarPos.Y + (progressBarSize.Y - percentTextSize.Y) / 2f;
+                // Move cursor past progress bar
+                ImGui.SetCursorPosY(progressY + progressBarHeight + 15f);
 
-                // Draw the text at the calculated position
-                ImGui.GetWindowDrawList().AddText(
-                    new Vector2(textX, textY),
-                    ImGui.GetColorU32(ImGuiCol.Text),
-                    percentText);
+                // Current step text - smaller, muted, centered
+                if (!string.IsNullOrEmpty(_currentStep))
+                {
+                    var stepSize = ImGui.CalcTextSize(_currentStep);
+                    ImGui.SetCursorPosX((windowSize.X - stepSize.X) / 2f);
+                    ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.5f, 0.5f, 0.55f, 1.0f));
+                    ImGui.TextUnformatted(_currentStep);
+                    ImGui.PopStyleColor();
+                }
+
+                // Animated loading dots at the bottom
+                float dotsY = windowSize.Y - 30f;
+                ImGui.SetCursorPosY(dotsY);
+                
+                string dots = new string('.', (int)((_animationTimer.Elapsed.TotalSeconds * 2) % 4));
+                var dotsSize = ImGui.CalcTextSize("Loading" + dots);
+                ImGui.SetCursorPosX((windowSize.X - dotsSize.X) / 2f);
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.4f, 0.4f, 0.45f, 1.0f));
+                ImGui.TextUnformatted("Loading" + dots);
+                ImGui.PopStyleColor();
 
                 ImGui.End();
             }
@@ -283,16 +372,6 @@ namespace LoneEftDmaRadar.UI.Misc
 
         [LibraryImport("dwmapi.dll")]
         private static partial int DwmSetWindowAttribute(nint hwnd, int attr, ref int attrValue, int attrSize);
-
-        [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial nint GetModuleHandleW(string lpModuleName);
-
-        private const uint IMAGE_ICON = 1;
-        private const uint LR_DEFAULTCOLOR = 0x00000000;
-        private const uint WM_SETICON = 0x0080;
-        private const nint ICON_SMALL = 0;
-        private const nint ICON_BIG = 1;
-        private const int IDI_APPLICATION = 32512;
 
         private static void EnableDarkMode(nint hwnd)
         {

@@ -208,6 +208,16 @@ namespace LoneEftDmaRadar.Tarkov.GameWorld.Player
         public UnityTransform SkeletonRoot { get; protected set; }
 
         /// <summary>
+        /// Dictionary of bone transforms for skeleton rendering.
+        /// </summary>
+        public ConcurrentDictionary<Bones, UnityTransform> PlayerBones { get; } = new();
+
+        /// <summary>
+        /// Lightweight wrapper for skeleton access (used by Aimview/ESP).
+        /// </summary>
+        public PlayerSkeleton Skeleton { get; protected set; }
+
+        /// <summary>
         /// TRUE if critical memory reads (position/rotation) have failed.
         /// </summary>
         public bool IsError { get; set; }
@@ -464,7 +474,13 @@ namespace LoneEftDmaRadar.Tarkov.GameWorld.Player
         public virtual void OnRealtimeLoop(VmmScatter scatter)
         {
             scatter.PrepareReadValue<Vector2>(RotationAddress); // Rotation
-            scatter.PrepareReadArray<TrsX>(SkeletonRoot.VerticesAddr, SkeletonRoot.Count); // ESP Vertices
+            scatter.PrepareReadArray<TrsX>(SkeletonRoot.VerticesAddr, SkeletonRoot.Count); // ESP Vertices for SkeletonRoot
+
+            // Prepare reads for each bone
+            foreach (var bone in PlayerBones.Values)
+            {
+                scatter.PrepareReadArray<TrsX>(bone.VerticesAddr, bone.Count);
+            }
 
             scatter.Completed += (sender, s) =>
             {
@@ -473,27 +489,41 @@ namespace LoneEftDmaRadar.Tarkov.GameWorld.Player
                 if (s.ReadValue<Vector2>(RotationAddress, out var rotation))
                     successRot = SetRotation(rotation);
 
+                // Update skeleton root position
                 if (s.ReadPooled<TrsX>(SkeletonRoot.VerticesAddr, SkeletonRoot.Count) is IMemoryOwner<TrsX> vertices)
                 {
                     using (vertices)
                     {
                         try
                         {
-                            try
-                            {
-                                _ = SkeletonRoot.UpdatePosition(vertices.Memory.Span);
-                            }
-                            catch (Exception ex) // Attempt to re-allocate Transform on error
-                            {
-                                Logging.WriteLine($"ERROR getting Player '{Name}' SkeletonRoot Position: {ex}");
-                                var transform = new UnityTransform(SkeletonRoot.TransformInternal);
-                                SkeletonRoot = transform;
-                            }
+                            _ = SkeletonRoot.UpdatePosition(vertices.Memory.Span);
                         }
-                        catch
+                        catch (Exception ex)
                         {
+                            Logging.WriteLine($"ERROR getting Player '{Name}' SkeletonRoot Position: {ex}");
+                            var transform = new UnityTransform(SkeletonRoot.TransformInternal);
+                            SkeletonRoot = transform;
                             successPos = false;
                         }
+                    }
+                }
+
+                // Update all bone positions with their own vertices data
+                foreach (var bonePair in PlayerBones)
+                {
+                    try
+                    {
+                        if (s.ReadPooled<TrsX>(bonePair.Value.VerticesAddr, bonePair.Value.Count) is IMemoryOwner<TrsX> boneVertices)
+                        {
+                            using (boneVertices)
+                            {
+                                bonePair.Value.UpdatePosition(boneVertices.Memory.Span);
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Silently ignore bone update errors - skeleton rendering is optional
                     }
                 }
 
@@ -897,4 +927,56 @@ namespace LoneEftDmaRadar.Tarkov.GameWorld.Player
     }
 
     public readonly record struct AIRole(string Name, PlayerType Type);
+
+    /// <summary>
+    /// Simple wrapper exposing skeleton root and bone transforms for Aimview/ESP rendering.
+    /// </summary>
+    public sealed class PlayerSkeleton
+    {
+        public PlayerSkeleton(UnityTransform root, ConcurrentDictionary<Bones, UnityTransform> bones)
+        {
+            Root = root;
+            BoneTransforms = bones;
+        }
+
+        /// <summary>
+        /// Skeleton root transform.
+        /// </summary>
+        public UnityTransform Root { get; }
+
+        /// <summary>
+        /// Dictionary of bone transforms indexed by bone type.
+        /// </summary>
+        public ConcurrentDictionary<Bones, UnityTransform> BoneTransforms { get; }
+
+        /// <summary>
+        /// Gets the world position of a specific bone.
+        /// </summary>
+        /// <param name="bone">Bone type to get position for.</param>
+        /// <returns>World position of the bone, or Vector3.Zero if not available.</returns>
+        public Vector3 GetBonePosition(Bones bone)
+        {
+            if (BoneTransforms.TryGetValue(bone, out var transform))
+            {
+                var pos = transform.Position;
+                if (pos != Vector3.Zero && !float.IsNaN(pos.X) && !float.IsInfinity(pos.X))
+                    return pos;
+            }
+            return Root?.Position ?? Vector3.Zero;
+        }
+
+        /// <summary>
+        /// Tries to get the world position of a specific bone.
+        /// </summary>
+        public bool TryGetBonePosition(Bones bone, out Vector3 position)
+        {
+            if (BoneTransforms.TryGetValue(bone, out var transform))
+            {
+                position = transform.Position;
+                return position != Vector3.Zero && !float.IsNaN(position.X) && !float.IsInfinity(position.X);
+            }
+            position = Vector3.Zero;
+            return false;
+        }
+    }
 }
